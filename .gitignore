@@ -1,2 +1,4 @@
 /ressources/*
-/properties.toml
+properties.toml
+.idea
+py_log.log
