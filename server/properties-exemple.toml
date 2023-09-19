@@ -1,7 +1,7 @@
 [app]
 sitemap_url = "https://www.hellofresh.com/sitemap_recipe_pages.xml"
 user_agent = "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
-pdf_save_path = "./ressources/seed-me.pdf"
+pdf_save_path = "YOUR_PATH_HERE/ressources/seed-me.pdf"
 
 [database]
 url = "https://localhost:9200"
