@@ -1,13 +1,13 @@
 import os
 import logging
-from server.Service import scrapper
+from .Service import scrapper
 
 from fastapi import FastAPI, Query, Path, HTTPException
 from typing import List
 from starlette.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
 from starlette.responses import FileResponse
-from server.appConfig import properties
+from .appConfig import properties
 
 app = FastAPI()
 
@@ -26,15 +26,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-sitemap_seed = properties.get_app_property("sitemap_url")
+SITEMAP_SEED = properties.get_app_property("sitemap_url")
+
+ES_URL = properties.get_database_property("url")
+ES_USERNAME = properties.get_database_property("username")
+ES_PASSWORD = properties.get_database_property("password")
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PDF_FOLDER = os.path.join(BASE_DIR, "pdf_folder")
+
+
+@app.get("/health")
+async def health():
+    """
+    Health check
+    :return: a json with status ok
+    """
+    return {"status": "ok"}
 
 
 @app.get("/")
 async def root():
+    """
+    Return a list with the 6 first recipes
+    :return: the list of 6 recipes
+    """
+
     es = Elasticsearch(
-        hosts=properties.get_database_property("url"),
-        basic_auth=(properties.get_database_property("username"),
-                    properties.get_database_property("paswword")),
+        hosts=ES_URL,
+        basic_auth=(ES_USERNAME,
+                    ES_PASSWORD),
         verify_certs=False)
 
     query = {
@@ -53,6 +74,11 @@ async def root():
 
 @app.get("/weekly-recipe/")
 async def weekly_recipe(filter: List[str] = Query(None)):
+    """
+    Return a list of 10 random recipes
+    :param filter: list of filters
+    :return: a list of 10 recipes
+    """
 
     exclude_condition = []
     if filter is not None:
@@ -61,9 +87,9 @@ async def weekly_recipe(filter: List[str] = Query(None)):
                 exclude_condition.append({"match": {field: item}})
 
     es = Elasticsearch(
-        hosts=properties.get_database_property("url"),
-        basic_auth=(properties.get_database_property("username"),
-                    properties.get_database_property("paswword")),
+        hosts=ES_URL,
+        basic_auth=(ES_USERNAME,
+                    ES_PASSWORD),
         verify_certs=False)
 
     query = {
@@ -92,6 +118,12 @@ async def weekly_recipe(filter: List[str] = Query(None)):
 
 @app.get("/change-one/")
 async def change_one(ids: str = Query(None), filter: List[str] = Query(None)):
+    """
+    Return a random recipe
+    :param ids: list of ids to exclude
+    :param filter: list of filters
+    :return: a random recipe
+    """
 
     if ids is None:
         raise HTTPException(status_code=404, detail="ids not found")
@@ -107,9 +139,7 @@ async def change_one(ids: str = Query(None), filter: List[str] = Query(None)):
     if exclude_ids:
         exclude_condition.append({"terms": {"_id": exclude_ids}})
 
-    exclude_condition = [{"match": {field: item}} for item in filter for field in ["name", "tags", "allergen"]]
-
-    mustNotConditions = exclude_condition + [
+    must_not_conditions = exclude_condition + [
         {
             "ids": {
                 "values": exclude_ids  # Assuming exclude_ids is a list
@@ -118,9 +148,9 @@ async def change_one(ids: str = Query(None), filter: List[str] = Query(None)):
     ]
 
     es = Elasticsearch(
-        hosts=properties.get_database_property("url"),
-        basic_auth=(properties.get_database_property("username"),
-                    properties.get_database_property("paswword")),
+        hosts=ES_URL,
+        basic_auth=(ES_USERNAME,
+                    ES_PASSWORD),
         verify_certs=False)
 
     query = {
@@ -129,7 +159,7 @@ async def change_one(ids: str = Query(None), filter: List[str] = Query(None)):
             "function_score": {
                 "query": {
                     "bool": {
-                        "must_not": mustNotConditions
+                        "must_not": must_not_conditions
                     }
                 },
                 "functions": [
@@ -142,54 +172,18 @@ async def change_one(ids: str = Query(None), filter: List[str] = Query(None)):
         }
     }
 
-    # query = {
-    #     "size": 1,
-    #     "query": {
-    #           "function_score": {
-    #             "query": {
-    #                 "bool": {
-    #                     "must_not":  exclude_condition
-    #                 }
-    #             },
-    #             "functions": [
-    #                 {
-    #                     "random_score": {}
-    #                 }
-    #             ],
-    #             "boost_mode": "replace"
-    #           }
-    #     }
-    # }
-
-                #GET /_search
-                # {
-                #   "query": {
-                #     "bool": {
-                #       "must_not": {
-                #         "exists": {
-                #           "field": "_id"
-                #         }
-                #       }
-                #     }
-                #   }
-                # }
-
-
     response = es.search(index='recipe', body=query, request_cache=False)
 
     return {'data': response["hits"]["hits"]}
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PDF_FOLDER = os.path.join(BASE_DIR, "pdf_folder")  # Make sure to place your PDFs here
-
-
 @app.get("/pdf/")
 async def pdf(pdf_path: str = Query(None)):
+    """
+    Return the pdf file
+    :param pdf_path: path of the pdf
+    :return: the pdf file
+    """
 
     logging.info(pdf_path)
 
@@ -203,13 +197,16 @@ async def pdf(pdf_path: str = Query(None)):
 
 @app.get("/web_service/")
 async def web_service(lang: str = Query(None)):
+    """Start the scrapping of the website
+    :param lang: language of the website
+    :return: a boolean informing if completed"""
 
     list_lang = ['EN', 'US', 'FR', 'DE', 'ES', 'NL', 'BE', 'LU', 'CH', 'IT']
 
     if (lang is None) or (lang == '') or (lang not in list_lang):
         raise HTTPException(status_code=404, detail="Language not found")
 
-    sitemap = sitemap_seed.replace("seed-me", lang.lower())
+    sitemap = SITEMAP_SEED.replace("seed-me", lang.lower())
     logging.info(f'Start Scrapping')
     completed = scrapper.start_scrapping(sitemap)
 

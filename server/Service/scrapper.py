@@ -8,9 +8,9 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 import urllib3
 import re
-from server.Service.database import Database
-from server.Entity.recipe import Recipe
-from server.appConfig import properties
+from .database import Database
+from ..Entity.recipe import Recipe
+from ..appConfig import properties
 
 
 def get_http_pool():

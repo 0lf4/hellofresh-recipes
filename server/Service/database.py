@@ -1,5 +1,5 @@
 from elasticsearch import Elasticsearch
-from server.appConfig import properties
+from ..appConfig import properties
 import json
 import logging
 
