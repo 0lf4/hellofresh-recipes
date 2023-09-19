@@ -1,4 +1,18 @@
-/ressources/*
-properties.toml
-.idea
+/ressources/
 py_log.log
+
+.DS_Store
+/client/front/node_modules
+/dist
+
+# local env files
+.env.local
+.env.*.local
+server/properties.toml
+
+
+# Log files
+npm-debug.log*
+
+# Editor directories and files
+.idea
