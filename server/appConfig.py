@@ -4,7 +4,7 @@ import logging
 
 class AppConfig:
     def __init__(self):
-        self._config_file_path = "properties.toml"
+        self._config_file_path = "server/properties.toml"
         self._config_data = None
         self._load_config()
 
