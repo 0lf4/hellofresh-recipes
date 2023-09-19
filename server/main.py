@@ -26,6 +26,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# GLOBAL VARIABLES
 SITEMAP_SEED = properties.get_app_property("sitemap_url")
 
 ES_URL = properties.get_database_property("url")
@@ -34,6 +36,7 @@ ES_PASSWORD = properties.get_database_property("password")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PDF_FOLDER = os.path.join(BASE_DIR, "pdf_folder")
+# END GLOBAL VARIABLES
 
 
 @app.get("/health")
