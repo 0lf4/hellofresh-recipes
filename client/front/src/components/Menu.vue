@@ -3,14 +3,20 @@
 
 import axios from "axios";
 import {useAppStore} from "@/store/app";
-import Recipe from "@/models/recipe"
-import {reactive, ref, watch} from "vue";
+import {reactive, watch} from "vue";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+type StateType = {
+    Recipes: any[];
+    localFilters: any[];
+};
 
 export default {
   setup() {
     const store = useAppStore();
 
-    const state = reactive({
+    const state = reactive<StateType>({
       Recipes: [...store.recipes],
       localFilters: [...store.filters]
     });
@@ -24,16 +30,14 @@ export default {
     });
 
 
-
-    const updateRecipes = (newRecipes) => {
+    const updateRecipes = (newRecipes: any) => {
       store.setRecipes(newRecipes);
     }
 
 
-    const addNewFilter = (filter) => {
+    const addNewFilter = (filter: any) => {
       store.addFilter(filter);
     }
-
 
 
     return {
@@ -45,20 +49,26 @@ export default {
   },
   data() {
     return {
-      dialogs: {},
+      dialogs: {} as Record<string, boolean>,
       localRecipes: this.recipes,
+      formData: {
+        username: '',
+        filters: [] as string[],
+        recipes: [] as any[]
+      }
     }
   },
   methods: {
-    toggleDialog(id) {
-      this.$set(this.dialogs, id, !this.dialogs[id]);
+    toggleDialog(id: any) {
+      // this.$set(this.dialogs, id, !this.dialogs[id]);
+      this.dialogs[id] = !this.dialogs[id];
     },
     togglePdfRecipe(pdfPath: string) {
       // this.$set(this.dialogs, id, !this.dialogs[id]);
-      axios.get('http://localhost:8000/pdf/' + pdfPath).then(async response => {
-        this.results = JSON.parse(await response.request.response).data
+      axios.get(API_URL + '/pdf/' + pdfPath).then(async response => {
+        let results = JSON.parse(await response.request.response).data
 
-        const blob = await this.results;
+        const blob = await results;
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.target = '_blank';
@@ -70,7 +80,7 @@ export default {
     onChangeRecipe(id: string) {
 
 
-      const baseUrl = 'http://localhost:8000/change-one'
+      const baseUrl = API_URL + '/change-one'
       let queryString = '';
 
       let ids = this.state.Recipes.map(recipe => recipe._id)
@@ -79,7 +89,7 @@ export default {
 
 
       if (this.state.localFilters[0].length > 0) {
-        queryString += this.state.localFilters[0].map(filter => `filter=${filter}`).join('&');
+        queryString += this.state.localFilters[0].map((filter: string) => `filter=${filter}`).join('&');
       }
 
 
@@ -89,23 +99,55 @@ export default {
         const updatedRecipe = JSON.parse(await response.request.response).data
 
         this.state.Recipes = this.state.Recipes.map(recipe => {
-            if (recipe._id === id) {
-                return updatedRecipe[0];
-            }
-            return recipe;
+          if (recipe._id === id) {
+            return updatedRecipe[0];
+          }
+          return recipe;
         });
 
       }).catch(error => {
         console.log(error)
       })
 
+    },
+    onSave() {
+      const baseUrl = API_URL + '/save/'
 
+
+      this.formData.username = 'test'
+      this.formData.filters = this.state.localFilters[0]
+      this.formData.recipes = this.state.Recipes
+
+      axios.post(baseUrl, this.formData).catch(error => {
+        console.log(error)
+      })
+
+    },
+    onClick() {
+
+      const baseUrl = API_URL + '/menu/get-back/test'
+
+      axios.get(baseUrl).then(async response => {
+        const updatedRecipe = JSON.parse(await response.request.response).data
+        this.state.Recipes = updatedRecipe[0]._source.recipes;
+        this.state.localFilters = updatedRecipe[0]._source.filters;
+        console.log(updatedRecipe[0]._source.filters)
+
+      }).catch(error => {
+        console.log(error)
+      })
     },
   }
 };
 </script>
 
 <template>
+  <v-row class="mx-5 mt-5">
+    <v-btn @click="onSave">Save</v-btn>
+    <v-btn @click="onClick">Get saved weekly menu</v-btn>
+  </v-row>
+
+
   <v-row class="mx-5 mt-5">
 
     <v-col

@@ -1,4 +1,3 @@
-// Utilities
 import { defineStore } from 'pinia'
 import {reactive} from "vue";
 
@@ -10,13 +9,13 @@ export const useAppStore = defineStore('app', {
 
 
   actions: {
-    setRecipes(newRecipes) {
+    setRecipes(newRecipes: any) {
       this.recipes = newRecipes;
     },
-    addFilter(filter) {
-      this.filters.push(filter);
+    addFilter(filter: any) {
+      this.filters.push(filter as never);
     },
-    removeFilter(filter) {
+    removeFilter(filter: any) {
       this.filters = this.filters.filter(f => f !== filter);
     },
     removeAllFilters() {

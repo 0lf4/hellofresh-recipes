@@ -1,11 +1,14 @@
 <script lang="ts">
 import axios from "axios";
+import Document from "@/models/document";
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default {
   data: () => ({
     loading: false,
     selection: 1,
-    results: []
+    results: [] as Document[],
   }),
 
   methods: {
@@ -17,7 +20,7 @@ export default {
   },
 
   mounted() {
-    axios.get('http://localhost:8000/').then(async response => {
+    axios.get(API_URL + '/').then(async response => {
       this.results = JSON.parse(await response.request.response).data
     }).catch(error => {
       console.log(error)
@@ -30,22 +33,22 @@ export default {
 
   <v-row class="mx-5 mt-5">
     <v-autocomplete
-      clearable
-      chips
-      label="Choose filters"
-      :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
-      multiple
-      variant="underlined"
+        clearable
+        chips
+        label="Choose filters"
+        :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
+        multiple
+        variant="underlined"
     ></v-autocomplete>
   </v-row>
 
   <v-row class="mx-5 mt-5">
     <v-col
-      v-for="recipe in results"
-      :key="recipe"
-      cols="6"
-      sm="3"
-      md="4"
+        v-for="recipe in results"
+        :key="recipe._id"
+        cols="6"
+        sm="3"
+        md="4"
     >
 
       <v-card :title="recipe.name" class="custom-card">
@@ -66,8 +69,8 @@ export default {
 
           <v-card-actions>
             <v-btn
-              color="orange-lighten-2"
-              variant="text"
+                color="orange-lighten-2"
+                variant="text"
             >
               Details
             </v-btn>
@@ -75,8 +78,8 @@ export default {
             <v-spacer></v-spacer>
 
             <v-btn
-              :icon="recipe.showDetails ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-              @click="recipe.showDetails = !recipe.showDetails"
+                :icon="recipe.showDetails ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+                @click="recipe.showDetails = !recipe.showDetails"
             ></v-btn>
           </v-card-actions>
 

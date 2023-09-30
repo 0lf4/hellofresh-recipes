@@ -2,6 +2,9 @@
 
 import axios from "axios";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 export default
 {
   name: 'Scrapper',
@@ -18,11 +21,7 @@ export default
   methods: {
     startScrap() {
 
-      axios.get('http://localhost:8000/web_service/?lang='+ this.selectedLang).then(async response => {
-                this.results = JSON.parse(await response.request.response).data
-                    this.recipes = this.results
-                    this.emitData()
-              }).catch(error => {
+      axios.get(API_URL + '/web_service/?lang='+ this.selectedLang).catch(error => {
                 console.log(error)
               })
     }
