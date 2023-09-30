@@ -1,12 +1,15 @@
-import os
 import logging
-from .Service import scrapper
-
-from fastapi import FastAPI, Query, Path, HTTPException
+import os
 from typing import List
-from starlette.middleware.cors import CORSMiddleware
+
 from elasticsearch import Elasticsearch
+from fastapi import FastAPI, Query, Path, HTTPException
+from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import FileResponse
+
+from .Entity.saveToMenu import SaveToMenu
+from .Service import scrapper
+from .Service.database import Database
 from .appConfig import properties
 
 app = FastAPI()
@@ -26,16 +29,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # GLOBAL VARIABLES
-SITEMAP_SEED = properties.get_app_property("sitemap_url")
+SITEMAP_SEED = properties.get_app_property("SITEMAP_URL")
 
-ES_URL = properties.get_database_property("url")
-ES_USERNAME = properties.get_database_property("username")
-ES_PASSWORD = properties.get_database_property("password")
+ES_URL = properties.get_database_property("URL")
+ES_USERNAME = properties.get_database_property("USERNAME")
+ES_PASSWORD = properties.get_database_property("PASSWORD")
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PDF_FOLDER = os.path.join(BASE_DIR, "pdf_folder")
+
+
 # END GLOBAL VARIABLES
 
 
@@ -98,7 +102,7 @@ async def weekly_recipe(filter: List[str] = Query(None)):
     query = {
         "size": 10,
         "query": {
-              "function_score": {
+            "function_score": {
                 "query": {
                     "bool": {
                         "must_not": exclude_condition
@@ -110,7 +114,7 @@ async def weekly_recipe(filter: List[str] = Query(None)):
                     }
                 ],
                 "boost_mode": "replace"
-              }
+            }
         }
     }
 
@@ -216,4 +220,55 @@ async def web_service(lang: str = Query(None)):
     return {'completed': completed}
 
 
+@app.post("/save/")
+async def save_recipe(menu_to_save: SaveToMenu):
+    """Save a recipe in the database
+    :param menu_to_save: the recipe ids to save
+    :return: a boolean informing if completed"""
 
+    doc = SaveToMenu(username=menu_to_save.username, filters=menu_to_save.filters, recipes=menu_to_save.recipes)
+
+    try:
+        database = Database()
+        database.insert(index_name='menu', doc=doc.model_dump_json())
+        return {'completed': True}
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        return {'completed': False}
+
+
+@app.get("/menu/get-back/{username}")
+async def get_back_menu(username: str = Path(..., title="The username of the user to get back")):
+    """Get back the menu of a user
+    :param username: the username of the user
+    :return: a list of recipes"""
+
+    es = Elasticsearch(
+        hosts=ES_URL,
+        basic_auth=(ES_USERNAME,
+                    ES_PASSWORD),
+        verify_certs=False)
+
+    query = {
+        "query": {
+            "match": {
+                "username": username
+            }
+        },
+        "sort": [
+            {
+                "created_at": {
+                    "order": "desc"
+                }
+            }
+        ],
+        "size": 1
+    }
+
+    try:
+        response = es.search(index='menu', body=query)
+        print(response["hits"]["hits"][0]["_source"]["recipes"])
+        return {'data': response["hits"]["hits"]}
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
