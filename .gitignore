@@ -4,6 +4,7 @@ py_log.log
 .DS_Store
 /client/front/node_modules
 /client/front/dist
+/client/front/tsconfig.tsbuildinfo
 
 # local env files
 .env.local
