@@ -6,7 +6,7 @@ import logging
 
 class Database:
     def __init__(self):
-        self._type = properties.get_database_property("type").lower()
+        self._type = properties.get_database_property("TYPE").lower()
         self._valid_es_types = ["elastic", "elastic search", "elastic_search", "elasticsearch", "es"]
         self._valid_mongo_types = ["mongo", "mongodb", "mongo_db", "mongo db"]
         self._config = self._load_config()
@@ -14,9 +14,9 @@ class Database:
     def _load_config(self):
         if self._type.lower() in self._valid_es_types:
             return Elasticsearch(
-                hosts=properties.get_database_property("url"),
-                basic_auth=(properties.get_database_property("username"),
-                            properties.get_database_property("password")),
+                hosts=properties.get_database_property("URL"),
+                basic_auth=(properties.get_database_property("USERNAME"),
+                            properties.get_database_property("PASSWORD")),
                 verify_certs=False)
 
         elif self._type in self._valid_mongo_types:
@@ -52,9 +52,17 @@ class Database:
         logging.info("Inserting document in ElasticSearch")
 
         if self._type.lower() in self._valid_es_types:
-            if self.search(doc=doc, index_name=index_name) is False:
-                self._load_config().index(index=index_name, document=doc)
-                logging.info("Document inserted")
+
+            match index_name:
+                case "recipe":
+                    if self.search(doc=doc, index_name=index_name) is False:
+                        self._load_config().index(index=index_name, document=doc)
+                        logging.info("Document inserted")
+                case "menu":
+                    self._load_config().index(index=index_name, document=doc)
+                    logging.info("Document inserted")
+                case _:
+                    logging.error("Unsupported index name.", exc_info=True)
 
         elif self._type in self._valid_mongo_types:
             logging.error("Not implemented yet for MongoDB.")

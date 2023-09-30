@@ -14,7 +14,7 @@ from ..appConfig import properties
 
 
 def get_http_pool():
-    user_agent = {'user-agent': properties.get_app_property("user_agent")}
+    user_agent = {'user-agent': properties.get_app_property("USER_AGENT")}
     return urllib3.PoolManager(2, headers=user_agent)
 
 
