@@ -3,7 +3,7 @@ py_log.log
 
 .DS_Store
 /client/front/node_modules
-/dist
+/client/front/dist
 
 # local env files
 .env.local
