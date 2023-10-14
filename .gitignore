@@ -18,3 +18,4 @@ npm-debug.log*
 
 # Editor directories and files
 .idea
+bin/ElasticSearchKibana/.env
