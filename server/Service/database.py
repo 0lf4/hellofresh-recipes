@@ -10,6 +10,7 @@ class Database:
         self._valid_es_types = ["elastic", "elastic search", "elastic_search", "elasticsearch", "es"]
         self._valid_mongo_types = ["mongo", "mongodb", "mongo_db", "mongo db"]
         self._config = self._load_config()
+        self._check_and_create_index()
 
     def _load_config(self):
         if self._type.lower() in self._valid_es_types:
@@ -26,6 +27,16 @@ class Database:
         else:
             logging.error("Unsupported database type.", exc_info=True)
             raise ValueError("Unsupported database type.")
+
+    # TODO : Do it one time at start, not everytime the class is instantiate
+    def _check_and_create_index(self):
+        indices = ["recipe", "menu"]
+        for indice in indices:
+           if not self._load_config().indices.exists(index=indice):
+                self._load_config().indices.create(index=indice)
+                logging.info(f"Index {indice} created.")
+           else:
+               logging.info(f"Index {indice} exist.")
 
     def search(self, index_name, doc):
 

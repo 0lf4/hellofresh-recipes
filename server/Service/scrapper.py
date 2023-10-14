@@ -121,18 +121,29 @@ def process_recipe_url(http, url):
 
     if len(data) == 0:
         soup = fetch_url_content(http, url)
+        data = soup.find_all(attrs={"data-test-id": "recipe-description"})
 
-    recipe_global_info = data[0]
+    try:
+        recipe_global_info = data[0]
+    except IndexError:
+        return
 
     title = recipe_global_info.h1.string
     tags = extract_tags(soup, recipe_global_info)
     allergen_list = extact_allergen(recipe_global_info)
 
-    difficulty_level = \
-    recipe_global_info.find_all(attrs={"data-translation-id": re.compile("recipe-detail.level-number")})[0].string
-    prep_time = (recipe_global_info.find_all(
-        attrs={"data-translation-id": "recipe-detail.preparation-time"})[0]
-                 .string.next_element.string)
+    try:
+        difficulty_level = \
+            recipe_global_info.find_all(
+                attrs={"data-translation-id": re.compile("recipe-detail.level-number")})[0].string
+    except IndexError:
+        difficulty_level = ''
+    try:
+        prep_time = (recipe_global_info.find_all(
+            attrs={"data-translation-id": "recipe-detail.preparation-time"})[0]
+                     .string.next_element.string)
+    except IndexError:
+        prep_time = ''
 
     ingredients_list = extract_ingredients(soup)
     nutrition = extract_nutrition(soup)
